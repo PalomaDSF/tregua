@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Trégua: protótipo de código aberto de um canal de comunicação com IA e supervisão humana para pais separados em conflito.">
+<title>Trégua</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&display=swap">
+<style>
+html{color-scheme:light dark}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+/* Layout: serviço público digital. Coluna única de leitura na página inicial; na demonstração, abas sobre um painel de trabalho. */
+:root{
+  --bg:#f3f6f6; --surface:#ffffff; --ink:#14262b; --muted:#56696e; --line:#d5dfe0;
+  --accent:#0f5c63; --accent-ink:#ffffff; --accent-soft:#dcebec;
+  --warn:#8a5a00; --warn-soft:#fbefd2; --ok:#1f6b45; --ok-soft:#dcefe3; --late:#9b3b2e; --late-soft:#f6e1dc;
+  --display:"Bricolage Grotesque","Inter",system-ui,sans-serif;
+  --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1719; --surface:#162326; --ink:#e6eeee; --muted:#9fb1b4; --line:#2a3b3f;
+  --accent:#6cc5cb; --accent-ink:#06282b; --accent-soft:#1c3a3d;
+  --warn:#f0c66a; --warn-soft:#3a2f12; --ok:#7fd0a3; --ok-soft:#173326; --late:#f0a093; --late-soft:#3d1f1a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1719; --surface:#162326; --ink:#e6eeee; --muted:#9fb1b4; --line:#2a3b3f;
+  --accent:#6cc5cb; --accent-ink:#06282b; --accent-soft:#1c3a3d;
+  --warn:#f0c66a; --warn-soft:#3a2f12; --ok:#7fd0a3; --ok-soft:#173326; --late:#f0a093; --late-soft:#3d1f1a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55}
+.wrap{max-width:960px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(1.9rem,5vw,2.8rem);font-weight:700}
+h2{font-size:1.45rem;font-weight:700}
+h3{font-size:1.05rem;font-weight:700}
+p{margin:0}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button,select,textarea,input{font:inherit;color:inherit}
+.topo{background:var(--surface);border-bottom:1px solid var(--line)}
+.topo .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;padding-block:12px}
+.marca{font-family:var(--display);font-weight:700;font-size:1.3rem;color:var(--accent);text-decoration:none}
+.topo nav{display:flex;flex-wrap:wrap;gap:4px;margin-left:auto}
+.topo nav a{padding:8px 12px;border-radius:8px;text-decoration:none;color:var(--ink);font-weight:500}
+.topo nav a[aria-current="page"]{background:var(--accent-soft);color:var(--accent)}
+.faixa{background:var(--warn-soft);color:var(--warn);font-size:.875rem;font-weight:500}
+.faixa .wrap{padding-block:8px}
+main .wrap{padding-block:32px 56px;display:flex;flex-direction:column;gap:44px}
+section{display:flex;flex-direction:column;gap:16px}
+.lead{font-size:1.125rem;color:var(--muted);max-width:60ch}
+.texto{max-width:65ch;display:flex;flex-direction:column;gap:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 18px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font-weight:600;text-decoration:none;cursor:pointer}
+.btn.sec{background:transparent;color:var(--accent)}
+.btn.peq{min-height:36px;padding:6px 12px;font-size:.9rem}
+.btn:disabled{opacity:.5;cursor:default}
+.linha{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.heroi{display:grid;grid-template-columns:1.1fr .9fr;gap:32px;align-items:center}
+.heroi>*{min-width:0}
+.antesdepois{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px}
+.rot{font-size:.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.bolha{padding:10px 14px;border-radius:14px;max-width:100%;overflow-wrap:anywhere}
+.bolha.orig{background:var(--late-soft);color:var(--late);text-decoration:line-through;text-decoration-thickness:1px}
+.bolha.ok{background:var(--accent-soft)}
+.numeros{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.numeros>div{min-width:0;border-top:3px solid var(--accent);padding-top:12px}
+.numeros b{display:block;font-family:var(--display);font-size:2rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.numeros span{color:var(--muted);font-size:.95rem}
+.fonte{font-size:.8rem;color:var(--muted)}
+ol.passos{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:20px;counter-reset:p}
+ol.passos li{min-width:0;counter-increment:p;display:flex;flex-direction:column;gap:6px}
+ol.passos li::before{content:counter(p);font-family:var(--display);font-weight:700;font-size:1.1rem;width:32px;height:32px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
+.principios{display:grid;grid-template-columns:repeat(2,1fr);gap:0;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
+.principios>div{min-width:0;padding:18px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.principios p,.passos p{color:var(--muted);font-size:.95rem}
+.etiquetas{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:0;padding:0}
+.etiquetas li{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:.95rem}
+.rodape{border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}
+.rodape .wrap{padding-block:20px;display:flex;flex-direction:column;gap:6px}
+/* demonstração */
+.barra{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end;justify-content:space-between}
+.campo{display:flex;flex-direction:column;gap:4px;min-width:0}
+.campo label{font-size:.85rem;font-weight:600;color:var(--muted)}
+select,textarea,input[type=text]{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;max-width:100%}
+textarea{width:100%;min-height:76px;resize:vertical}
+.abas{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line)}
+.abas button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;font-weight:600;color:var(--muted);cursor:pointer;min-height:44px}
+.abas button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.painel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:16px}
+.conversa{display:flex;flex-direction:column;gap:12px}
+.msg{display:flex;flex-direction:column;gap:4px;max-width:min(520px,88%)}
+.msg.minha{align-self:flex-end;align-items:flex-end}
+.msg .b{padding:10px 14px;border-radius:14px;background:var(--bg);border:1px solid var(--line);overflow-wrap:anywhere}
+.msg.minha .b{background:var(--accent-soft);border-color:transparent}
+.meta{font-size:.78rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-variant-numeric:tabular-nums}
+.selo{font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--warn-soft);color:var(--warn)}
+.selo.ok{background:var(--ok-soft);color:var(--ok)}
+.selo.atraso{background:var(--late-soft);color:var(--late)}
+.selo.neutro{background:var(--accent-soft);color:var(--accent)}
+.orig{font-size:.85rem;color:var(--muted);border-left:3px solid var(--line);padding-left:10px;overflow-wrap:anywhere}
+.aviso{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.aviso .caixa{background:var(--surface);color:var(--ink);border-radius:8px;padding:10px 12px;overflow-wrap:anywhere}
+.exemplos{display:flex;flex-wrap:wrap;gap:8px}
+.exemplos button{background:var(--bg);border:1px dashed var(--line);border-radius:999px;padding:6px 12px;font-size:.85rem;cursor:pointer;min-height:36px}
+.lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.lista li{display:grid;grid-template-columns:1fr auto;gap:6px 14px;padding:12px 0;border-bottom:1px solid var(--line);align-items:center}
+.lista li>*{min-width:0}
+.lista li:last-child{border-bottom:0}
+.lista small{color:var(--muted);display:block}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;font-variant-numeric:tabular-nums;font-size:.85rem}
+.cal div{min-width:0;aspect-ratio:1/1;max-height:64px;border:1px solid var(--line);border-radius:6px;padding:4px;display:flex;flex-direction:column;gap:2px;overflow:hidden}
+.cal .cab{aspect-ratio:auto;border:0;text-align:center;font-weight:600;color:var(--muted);padding:0}
+.cal .hoje{border-color:var(--accent);border-width:2px}
+.cal i{font-style:normal;font-size:.65rem;font-weight:600;border-radius:4px;padding:0 3px;background:var(--accent-soft);color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal i.v{background:var(--warn-soft);color:var(--warn)}
+.tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+.tl li{border-left:3px solid var(--accent-soft);padding-left:14px;display:flex;flex-direction:column;gap:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;cursor:pointer;min-height:36px;font-size:.9rem}
+.chips button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.relatorio{border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--bg);display:flex;flex-direction:column;gap:10px}
+.relatorio pre{white-space:pre-wrap;overflow-wrap:anywhere;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.82rem;margin:0;max-height:320px;overflow:auto}
+.resumo{display:flex;flex-wrap:wrap;gap:8px 24px;font-variant-numeric:tabular-nums}
+.resumo b{font-family:var(--display);font-size:1.4rem}
+.caso{border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.vazio{color:var(--muted)}
+@media (max-width:720px){
+  .heroi,.numeros,ol.passos,.principios{grid-template-columns:1fr}
+  .topo nav{margin-left:0}
+  .lista li{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:no-preference){.btn,.abas button,.chips button{transition:background-color .15s,color .15s}}
+</style>
+</head>
+<body>
+
+<header class="topo"><div class="wrap">
+  <a class="marca" href="#inicio">Trégua</a>
+  <nav aria-label="Seções">
+    <a href="#inicio" data-nav="inicio">Início</a>
+    <a href="#demo" data-nav="demo">Demonstração</a>
+    <a href="#transparencia" data-nav="transparencia">Transparência</a>
+  </nav>
+</div></header>
+<div class="faixa"><div class="wrap">Protótipo demonstrativo. Pessoas e dados fictícios. A análise de IA é simulada por regras.</div></div>
+
+<main>
+<!-- INÍCIO -->
+<div class="wrap" id="v-inicio">
+  <section class="heroi">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <h1>Comunicação segura entre pais separados em conflito</h1>
+      <p class="lead">Um canal com inteligência artificial e supervisão humana que reduz a hostilidade, organiza as obrigações com os filhos e guarda tudo em ordem.</p>
+      <div class="linha">
+        <a class="btn" href="#demo">Ver demonstração</a>
+        <a class="btn sec" href="#transparencia">Como a IA decide</a>
+      </div>
+      <p class="fonte">Projeto de código aberto e interesse público. Repositório em preparação.</p>
+    </div>
+    <div class="antesdepois" aria-label="Exemplo de mensagem ajustada">
+      <span class="rot">O que foi escrito</span>
+      <div class="bolha orig">Você é uma irresponsável, nunca faz nada direito. A Lia precisa do uniforme novo até segunda.</div>
+      <span class="rot">O que foi entregue</span>
+      <div class="bolha ok">A Lia precisa do uniforme novo até segunda.</div>
+      <p class="fonte">O texto original não é apagado. Fica guardado no registro, com data e hora.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>O problema</h2>
+    <div class="numeros">
+      <div><b>428.301</b><span>divórcios registrados no Brasil em 2024</span></div>
+      <div><b>45,8%</b><span>dos divórcios judiciais eram de famílias só com filhos menores</span></div>
+      <div><b>44,6%</b><span>de guarda compartilhada, que superou pela primeira vez a guarda materna</span></div>
+    </div>
+    <p class="fonte">Fonte: IBGE, Estatísticas do Registro Civil 2024.</p>
+    <div class="texto">
+      <p>A relação termina, mas as obrigações continuam por anos: pensão, visitas, escola, saúde. Quando há histórico de violência, a conversa obrigatória sobre os filhos vira o canal pelo qual ela continua.</p>
+      <p>Hoje essa conversa acontece em aplicativos comuns. As mensagens ficam dispersas, podem ser apagadas, e quem sofre a violência precisa reunir capturas de tela para provar o que viveu.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Como funciona</h2>
+    <ol class="passos">
+      <li><h3>Linguagem</h3><p>A IA identifica ofensa, ameaça ou manipulação e propõe uma versão objetiva antes da entrega.</p></li>
+      <li><h3>Obrigações</h3><p>Pensão, visitas, despesas e prazos do acordo viram calendário, com aviso de descumprimento.</p></li>
+      <li><h3>Registro</h3><p>Tudo fica em linha do tempo, com data e hora, pronto para ser levado a uma advogada, à Defensoria ou ao juízo.</p></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Princípios</h2>
+    <div class="principios">
+      <div><h3>Código aberto</h3><p>Qualquer instituição pode auditar, adaptar e hospedar.</p></div>
+      <div><h3>A decisão é humana</h3><p>Casos com sinal de risco vão para uma profissional.</p></div>
+      <div><h3>O original é preservado</h3><p>A IA nunca apaga o que foi escrito.</p></div>
+      <div><h3>Privacidade</h3><p>Aberto é o código, nunca os dados das famílias.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Para quem</h2>
+    <ul class="etiquetas"><li>Famílias em alto conflito</li><li>Defensorias Públicas</li><li>Centros de mediação e tribunais</li><li>Pesquisadoras e pesquisadores</li></ul>
+    <div class="texto">
+      <p>Os aplicativos de guarda que já existem atendem pais que querem cooperar. Este projeto é pensado para os casos em que a cooperação não é possível.</p>
+      <p>Alinhado aos Objetivos de Desenvolvimento Sustentável 5 (igualdade de gênero) e 16 (paz, justiça e instituições eficazes).</p>
+      <p><strong>Estágio:</strong> protótipo em desenvolvimento. Ainda não testado com usuárias.</p>
+    </div>
+  </section>
+</div>
+
+<!-- DEMONSTRAÇÃO -->
+<div class="wrap" id="v-demo" hidden>
+  <section>
+    <div class="barra">
+      <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+        <h2>Demonstração</h2>
+        <p class="vazio">Caso fictício: Ana e Bruno, separados, pais de Lia, de 7 anos.</p>
+      </div>
+      <div class="campo">
+        <label for="perfil">Ver como</label>
+        <select id="perfil">
+          <option value="ana">Ana (mãe)</option>
+          <option value="bruno">Bruno (pai)</option>
+          <option value="prof">Profissional supervisora</option>
+        </select>
+      </div>
+    </div>
+    <div class="abas" role="tablist" id="abas"></div>
+    <div class="painel" id="painel" role="tabpanel"></div>
+  </section>
+</div>
+
+<!-- TRANSPARÊNCIA -->
+<div class="wrap" id="v-transparencia" hidden>
+  <section>
+    <h1>Transparência</h1>
+    <p class="lead">O que a ferramenta faz, o que guarda e onde pode errar.</p>
+  </section>
+  <section class="texto">
+    <h2>Como a IA decide</h2>
+    <p>Cada mensagem é verificada antes da entrega em quatro categorias: ofensa, ameaça, pressão financeira e manipulação. Se algo for encontrado, quem escreveu recebe uma versão objetiva e escolhe entre enviá-la ou reescrever.</p>
+    <p>Neste protótipo a análise é simulada por listas de palavras e expressões. Na versão real, será feita por um modelo de linguagem.</p>
+  </section>
+  <section class="texto">
+    <h2>O que a IA pode errar</h2>
+    <p>Pode não perceber uma agressão sutil. Pode marcar como hostil o que não é. Pode suavizar o relato de quem sofre a violência.</p>
+    <p>Por isso o texto original é sempre preservado, toda alteração fica visível no registro e os casos com sinal de ameaça passam por uma profissional.</p>
+  </section>
+  <section class="texto">
+    <h2>O que fica guardado</h2>
+    <p>Mensagens originais e ajustadas, datas e horas, obrigações cumpridas e descumpridas, e as ações da profissional supervisora.</p>
+  </section>
+  <section class="texto">
+    <h2>Privacidade</h2>
+    <p>O uso depende de consentimento, conforme a Lei Geral de Proteção de Dados. O código é público. Os dados das famílias não são.</p>
+  </section>
+  <section class="texto">
+    <h2>Quando não usar</h2>
+    <p>Se houver medida protetiva com proibição de contato, a plataforma só deve ser usada com autorização judicial.</p>
+  </section>
+  <section class="texto">
+    <h2>O que este protótipo ainda não faz</h2>
+    <p>Não usa um modelo de linguagem real. Não guarda dados: ao recarregar a página, a demonstração volta ao início. Não foi testado com usuárias. A versão final terá um botão de saída rápida.</p>
+  </section>
+</div>
+</main>
+
+<footer class="rodape"><div class="wrap">
+  <span>Projeto de código aberto. Licença: GNU AGPL v3.0.</span>
+  <span>Em perigo imediato, ligue 190. Central de Atendimento à Mulher: 180.</span>
+</div></footer>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+const fmt = iso => new Date(iso).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+const NOME = {ana:'Ana', bruno:'Bruno', prof:'Profissional'};
+
+/* ---- Análise simulada. Trocar esta função por um modelo de linguagem na versão real. ---- */
+const REGRAS = {
+  ameaca:{rotulo:'ameaça', termos:['vai se arrepender','vai ver so','eu acabo com','vou tirar a lia','vou sumir com','voce vai pagar','toma cuidado','tome cuidado','sei onde voce']},
+  pressao:{rotulo:'pressão financeira', termos:['so pago','nao pago','corto a pensao','cortar a pensao','nao vai ver um centavo','sem dinheiro ate']},
+  manipulacao:{rotulo:'manipulação', termos:['a culpa e sua','nao gosta de voce','todo mundo sabe que voce','voce esta louca','voce esta louco','ninguem vai acreditar']},
+  ofensa:{rotulo:'ofensa', termos:['irresponsavel','idiota','burra','burro','inutil','louca','incompetente','ridicula','ridiculo','pessima mae','pessimo pai','nunca faz nada']}
+};
+const ORDEM = ['ameaca','pressao','manipulacao','ofensa'];
+function analisar(texto){
+  const frases = texto.match(/[^.!?]+[.!?]*/g) || [texto];
+  const cats = new Set(); const limpas = [];
+  for(const f of frases){
+    const n = norm(f); let achou = false;
+    for(const k in REGRAS){ if(REGRAS[k].termos.some(t => n.includes(t))){ cats.add(k); achou = true; } }
+    if(!achou && f.trim()) limpas.push(f.trim());
+  }
+  if(!cats.size) return null;
+  let sug = limpas.join(' ');
+  sug = sug.length < 12 ? 'Preciso tratar de um assunto sobre a Lia. Podemos combinar por aqui?' : sug[0].toUpperCase() + sug.slice(1);
+  return {principal: ORDEM.find(k => cats.has(k)), sugestao: sug};
+}
+
+/* ---- Dados fictícios ---- */
+let seq = 100;
+const S = {
+  perfil:'ana', aba:'mensagens', rascunho:'', pendente:null, filtro:'todos', relatorio:false, lendo:false, extraido:null,
+  msgs:[
+    {id:1,de:'ana',texto:'Bruno, a reunião da escola da Lia é na quinta, às 18h. Você consegue ir?',quando:'2026-11-02T09:14'},
+    {id:2,de:'bruno',texto:'Consigo. Depois deixo ela na sua casa.',quando:'2026-11-02T09:40'},
+    {id:3,de:'bruno',texto:'A Lia precisa do uniforme novo até segunda.',original:'Você é uma irresponsável, nunca faz nada direito. A Lia precisa do uniforme novo até segunda.',cat:'ofensa',quando:'2026-11-04T20:05'},
+    {id:4,de:'ana',texto:'Compro amanhã. Envio o comprovante para dividirmos.',quando:'2026-11-04T20:31'},
+    {id:5,de:'ana',texto:'O material escolar ficou em R$ 240. A sua parte é R$ 120, vencida em 30/10.',quando:'2026-11-05T08:12'},
+    {id:6,de:'bruno',texto:'Quero buscar a Lia no sábado às 10h.',original:'Se você não deixar eu ver a Lia no sábado, você vai se arrepender. Quero buscar a Lia no sábado às 10h.',cat:'ameaca',quando:'2026-11-06T22:47'},
+    {id:7,de:'ana',texto:'Sábado às 10h está combinado, como no acordo.',quando:'2026-11-07T07:55'}
+  ],
+  obrig:[
+    {id:1,titulo:'Pensão de outubro: R$ 900',resp:'Bruno',prazo:'10/10/2026',sit:'atrasada-paga',nota:'Paga em 17/10/2026, com 7 dias de atraso'},
+    {id:2,titulo:'Material escolar: R$ 120 (metade)',resp:'Bruno',prazo:'30/10/2026',sit:'atraso'},
+    {id:3,titulo:'Convivência: fim de semana de 7 e 8/11',resp:'Ana e Bruno',prazo:'08/11/2026',sit:'cumprida'},
+    {id:4,titulo:'Pensão de novembro: R$ 900',resp:'Bruno',prazo:'10/11/2026',sit:'pendente'},
+    {id:5,titulo:'Convivência: fim de semana de 21 e 22/11',resp:'Ana e Bruno',prazo:'22/11/2026',sit:'pendente'}
+  ],
+  fila:[{id:1,msgId:6,cat:'ameaca',status:'pendente',orient:''}],
+  reg:[
+    {quando:'2026-10-17T10:02',tipo:'obrigacao',texto:'Pensão de outubro paga com 7 dias de atraso.'},
+    {quando:'2026-10-31T00:01',tipo:'obrigacao',texto:'Material escolar (R$ 120) entrou em atraso.'},
+    {quando:'2026-11-06T22:48',tipo:'supervisao',texto:'Mensagem de Bruno encaminhada para revisão de uma profissional (ameaça).'},
+    {quando:'2026-11-08T19:30',tipo:'obrigacao',texto:'Convivência do fim de semana de 7 e 8/11 cumprida.'}
+  ]
+};
+const SIT = {cumprida:['Cumprida','ok'], pendente:['Pendente','neutro'], atraso:['Em atraso','atraso'], 'atrasada-paga':['Cumprida com atraso','']};
+
+function registro(){
+  const m = S.msgs.map(x => ({quando:x.quando,tipo:'mensagem',texto:NOME[x.de]+': '+x.texto,original:x.original,cat:x.cat}));
+  return m.concat(S.reg).sort((a,b) => a.quando < b.quando ? 1 : -1);
+}
+const agora = () => { const d = new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16); };
+
+/* ---- Abas ---- */
+function abas(){
+  const lista = [['mensagens','Mensagens'],['obrigacoes','Obrigações'],['linha','Linha do tempo']];
+  if(S.perfil === 'prof') lista.push(['supervisao','Supervisão']);
+  if(S.aba === 'supervisao' && S.perfil !== 'prof') S.aba = 'mensagens';
+  $('#abas').innerHTML = lista.map(([k,r]) => `<button role="tab" id="aba-${k}" data-aba="${k}" aria-selected="${S.aba===k}">${r}${k==='supervisao'?` (${S.fila.filter(f=>f.status==='pendente').length})`:''}</button>`).join('');
+}
+
+function vMensagens(){
+  const eu = S.perfil;
+  const itens = S.msgs.map(m => {
+    const minha = m.de === eu;
+    let extra = '';
+    if(m.original){
+      if(minha || eu === 'prof') extra = `<div class="orig"><strong>Texto original, guardado no registro:</strong> ${esc(m.original)}</div>`;
+    }
+    const selos = m.original ? `<span class="selo">Ajustada pela IA${eu==='prof'||minha?': '+REGRAS[m.cat].rotulo:''}</span>` : '';
+    const enc = m.cat === 'ameaca' && (minha || eu === 'prof') ? '<span class="selo atraso">Em revisão de uma profissional</span>' : '';
+    return `<div class="msg ${minha?'minha':''}"><div class="meta"><strong>${NOME[m.de]}</strong><span>${fmt(m.quando)}</span>${selos}${enc}</div><div class="b">${esc(m.texto)}</div>${extra}</div>`;
+  }).join('');
+  let compor;
+  if(eu === 'prof'){
+    compor = '<p class="vazio">A profissional vê as duas versões de cada mensagem e não escreve na conversa.</p>';
+  } else if(S.pendente){
+    const p = S.pendente;
+    compor = `<div class="aviso" role="alert">
+      <strong>Esta mensagem pode ser lida como ${REGRAS[p.principal].rotulo}.</strong>
+      <div><span class="rot">Seu texto</span><div class="caixa">${esc(p.original)}</div></div>
+      <div><span class="rot">Versão objetiva sugerida</span><div class="caixa">${esc(p.sugestao)}</div></div>
+      ${p.principal==='ameaca'?'<span>Se você enviar, o caso será encaminhado para revisão de uma profissional.</span>':''}
+      <span>Seu texto original fica guardado no registro. A outra pessoa recebe apenas a versão objetiva.</span>
+      <div class="linha"><button class="btn peq" data-acao="enviar-sugestao">Enviar versão sugerida</button><button class="btn sec peq" data-acao="editar">Editar minha mensagem</button></div>
+    </div>`;
+  } else {
+    compor = `<div class="campo"><label for="texto">Escrever como ${NOME[eu]}</label><textarea id="texto" placeholder="Escreva sobre a Lia: visitas, escola, saúde, despesas.">${esc(S.rascunho)}</textarea></div>
+      <div class="linha"><button class="btn" data-acao="enviar">Enviar</button></div>
+      <div><span class="rot">Experimente com um exemplo</span>
+      <div class="exemplos" style="margin-top:6px">
+        <button data-ex="Posso buscar a Lia na sexta às 18h em vez de sábado?">Mensagem neutra</button>
+        <button data-ex="Você é ridícula e incompetente. A consulta da Lia é na terça às 15h.">Com ofensa</button>
+        <button data-ex="Só pago a pensão se você fizer o que eu mandar.">Com pressão financeira</button>
+        <button data-ex="Se você não atender, você vai se arrepender. Preciso do boletim da Lia.">Com ameaça</button>
+      </div></div>`;
+  }
+  return `<div class="conversa">${itens}</div>${compor}`;
+}
+
+function vObrigacoes(){
+  const li = S.obrig.map(o => {
+    const [r,c] = SIT[o.sit];
+    const pode = (o.sit === 'pendente' || o.sit === 'atraso') && S.perfil !== 'prof';
+    return `<li><div><strong>${esc(o.titulo)}</strong><small>Responsável: ${esc(o.resp)} · Prazo: ${esc(o.prazo)}${o.nota?' · '+esc(o.nota):''}</small></div>
+      <div class="linha"><span class="selo ${c}">${r}</span>${pode?`<button class="btn sec peq" data-cumprir="${o.id}">Marcar como cumprida</button>`:''}</div></li>`;
+  }).join('');
+  const marcas = {7:['Convivência','v'],8:['Convivência','v'],10:['Pensão',''],21:['Convivência','v'],22:['Convivência','v']};
+  let cal = ['D','S','T','Q','Q','S','S'].map(d => `<div class="cab">${d}</div>`).join('');
+  for(let d=1; d<=30; d++){ const m = marcas[d]; cal += `<div class="${d===9?'hoje':''}">${d}${m?`<i class="${m[1]}">${m[0]}</i>`:''}</div>`; }
+  let extra;
+  if(S.lendo) extra = '<p class="vazio" role="status">Lendo o documento...</p>';
+  else if(S.extraido) extra = `<div class="aviso"><strong>Confira antes de confirmar. A IA pode errar.</strong>
+      <div class="campo"><label for="ex-titulo">Obrigação encontrada no documento</label><input type="text" id="ex-titulo" value="${esc(S.extraido.titulo)}"></div>
+      <div class="campo"><label for="ex-prazo">Prazo</label><input type="text" id="ex-prazo" value="${esc(S.extraido.prazo)}"></div>
+      <div class="linha"><button class="btn peq" data-acao="confirmar-extraido">Confirmar</button><button class="btn sec peq" data-acao="descartar-extraido">Descartar</button></div></div>`;
+  else extra = S.perfil === 'prof' ? '' : '<div class="linha"><button class="btn sec" data-acao="ler-acordo">Adicionar acordo ou sentença</button><span class="vazio">Simula a leitura de um documento.</span></div>';
+  return `<h3>Obrigações do acordo</h3><ul class="lista">${li}</ul>${extra}
+    <h3>Novembro de 2026</h3><div class="cal" aria-label="Calendário de novembro de 2026">${cal}</div>
+    <p class="fonte">Hoje, na demonstração, é 9 de novembro de 2026.</p>`;
+}
+
+function textoRelatorio(r){
+  const aj = S.msgs.filter(m => m.original).length;
+  const at = S.obrig.filter(o => o.sit === 'atraso' || o.sit === 'atrasada-paga').length;
+  let t = `RELATÓRIO DE COMUNICAÇÃO E OBRIGAÇÕES\nCaso fictício: Ana e Bruno, pais de Lia\nPeríodo: 17/10/2026 a ${fmt(agora())}\n\nMensagens trocadas: ${S.msgs.length}\nMensagens ajustadas pela IA: ${aj}\nObrigações com atraso: ${at}\n\nREGISTROS (do mais recente ao mais antigo)\n`;
+  r.forEach(e => { t += `\n[${fmt(e.quando)}] ${e.texto}`; if(e.original) t += `\n   Texto original (${REGRAS[e.cat].rotulo}): ${e.original}`; });
+  return t + '\n\nDocumento gerado a partir de dados fictícios, para demonstração.';
+}
+
+function vLinha(){
+  const todos = registro();
+  const r = S.filtro === 'todos' ? todos : todos.filter(e => e.tipo === S.filtro);
+  const tipos = [['todos','Tudo'],['mensagem','Mensagens'],['obrigacao','Obrigações'],['supervisao','Supervisão']];
+  const chips = tipos.map(([k,l]) => `<button data-filtro="${k}" aria-pressed="${S.filtro===k}">${l}</button>`).join('');
+  const verOrig = S.perfil === 'prof';
+  const li = r.map(e => {
+    const meu = e.tipo === 'mensagem' && e.texto.startsWith(NOME[S.perfil]+':');
+    return `<li><div class="meta"><span>${fmt(e.quando)}</span><span class="selo neutro">${{mensagem:'Mensagem',obrigacao:'Obrigação',supervisao:'Supervisão'}[e.tipo]}</span>${e.original?'<span class="selo">Ajustada pela IA</span>':''}</div>
+      <div>${esc(e.texto)}</div>${e.original && (verOrig || meu) ? `<div class="orig"><strong>Texto original (${REGRAS[e.cat].rotulo}):</strong> ${esc(e.original)}</div>`:''}</li>`;
+  }).join('') || '<li class="vazio">Nenhum registro neste filtro.</li>';
+  const aj = S.msgs.filter(m => m.original).length, at = S.obrig.filter(o => o.sit==='atraso'||o.sit==='atrasada-paga').length;
+  const rel = S.relatorio ? `<div class="relatorio"><h3>Relatório</h3>
+      <div class="resumo"><span><b>${S.msgs.length}</b> mensagens</span><span><b>${aj}</b> ajustadas pela IA</span><span><b>${at}</b> obrigações com atraso</span></div>
+      <pre id="rel-texto" tabindex="0">${esc(textoRelatorio(todos))}</pre>
+      <div class="linha"><button class="btn peq" data-acao="copiar">Copiar texto</button><button class="btn sec peq" data-acao="fechar-rel">Fechar</button><span id="copiado" class="vazio" role="status"></span></div>
+      <p class="fonte">O relatório completo, com os textos originais, é o que seria entregue a uma advogada, à Defensoria ou ao juízo.</p></div>` : '';
+  return `<div class="barra"><div class="chips" role="group" aria-label="Filtrar por tipo">${chips}</div><button class="btn sec peq" data-acao="relatorio">Gerar relatório</button></div>${rel}<ul class="tl">${li}</ul>
+    ${verOrig?'':'<p class="fonte">Nesta tela você vê o texto original apenas das suas próprias mensagens.</p>'}`;
+}
+
+function vSupervisao(){
+  if(!S.fila.length) return '<p class="vazio">Nenhum caso encaminhado.</p>';
+  const casos = S.fila.map(f => {
+    const m = S.msgs.find(x => x.id === f.msgId);
+    const ops = ORDEM.map(k => `<option value="${k}" ${f.cat===k?'selected':''}>${REGRAS[k].rotulo}</option>`).join('') + `<option value="nenhuma" ${f.cat==='nenhuma'?'selected':''}>sem hostilidade</option>`;
+    const st = {pendente:['Aguardando revisão','atraso'],confirmada:['Avaliação confirmada','ok'],corrigida:['Avaliação corrigida','ok']}[f.status];
+    return `<div class="caso"><div class="meta"><strong>${NOME[m.de]}</strong><span>${fmt(m.quando)}</span><span class="selo ${st[1]}">${st[0]}</span></div>
+      <div class="orig"><strong>Texto original:</strong> ${esc(m.original)}</div>
+      <div><span class="rot">Entregue à outra parte</span><div>${esc(m.texto)}</div></div>
+      <p class="vazio">Motivo apontado pela IA: expressão associada a ${REGRAS[m.cat] ? REGRAS[m.cat].rotulo : 'hostilidade'}.</p>
+      <div class="campo"><label for="cat-${f.id}">Categoria</label><select id="cat-${f.id}">${ops}</select></div>
+      <div class="campo"><label for="ori-${f.id}">Orientação da profissional</label><textarea id="ori-${f.id}" placeholder="Por exemplo: contato com a usuária, encaminhamento à Defensoria.">${esc(f.orient)}</textarea></div>
+      <div class="linha"><button class="btn peq" data-confirmar="${f.id}">Confirmar avaliação da IA</button><button class="btn sec peq" data-corrigir="${f.id}">Salvar correção e orientação</button></div></div>`;
+  }).join('');
+  return `<p><strong>A IA faz a triagem. A decisão é sempre de uma pessoa.</strong></p>${casos}`;
+}
+
+function desenhar(){
+  abas();
+  const p = $('#painel');
+  p.setAttribute('aria-labelledby','aba-'+S.aba);
+  p.innerHTML = {mensagens:vMensagens, obrigacoes:vObrigacoes, linha:vLinha, supervisao:vSupervisao}[S.aba]();
+}
+
+function entregar(de, texto, original, cat){
+  const m = {id:++seq, de, texto, quando:agora()};
+  if(original){ m.original = original; m.cat = cat; }
+  S.msgs.push(m);
+  if(cat === 'ameaca'){
+    S.fila.push({id:++seq, msgId:m.id, cat, status:'pendente', orient:''});
+    S.reg.push({quando:agora(), tipo:'supervisao', texto:`Mensagem de ${NOME[de]} encaminhada para revisão de uma profissional (ameaça).`});
+  }
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('button'); if(!t) return;
+  const d = t.dataset;
+  if(d.aba){ S.aba = d.aba; S.relatorio = false; }
+  else if(d.ex){ S.rascunho = d.ex; S.pendente = null; }
+  else if(d.filtro){ S.filtro = d.filtro; }
+  else if(d.cumprir){ const o = S.obrig.find(x => x.id == d.cumprir); const atras = o.sit === 'atraso'; o.sit = atras ? 'atrasada-paga' : 'cumprida'; if(atras) o.nota = 'Registrada como cumprida após o prazo'; S.reg.push({quando:agora(),tipo:'obrigacao',texto:`${o.titulo}: marcada como cumprida por ${NOME[S.perfil]}${atras?', após o prazo':''}.`}); }
+  else if(d.confirmar){ const f = S.fila.find(x => x.id == d.confirmar); f.status = 'confirmada'; f.orient = $('#ori-'+f.id).value.trim(); S.reg.push({quando:agora(),tipo:'supervisao',texto:'Profissional confirmou a avaliação da IA.'+(f.orient?' Orientação: '+f.orient:'')}); }
+  else if(d.corrigir){ const f = S.fila.find(x => x.id == d.corrigir); f.cat = $('#cat-'+f.id).value; f.orient = $('#ori-'+f.id).value.trim(); f.status = 'corrigida'; S.reg.push({quando:agora(),tipo:'supervisao',texto:`Profissional registrou a avaliação: ${f.cat==='nenhuma'?'sem hostilidade':REGRAS[f.cat].rotulo}.`+(f.orient?' Orientação: '+f.orient:'')}); }
+  else switch(d.acao){
+    case 'enviar': { const txt = ($('#texto').value || '').trim(); if(!txt) return; const a = analisar(txt); if(a){ S.pendente = {original:txt, ...a}; } else { entregar(S.perfil, txt); S.rascunho = ''; } break; }
+    case 'enviar-sugestao': entregar(S.perfil, S.pendente.sugestao, S.pendente.original, S.pendente.principal); S.pendente = null; S.rascunho = ''; break;
+    case 'editar': S.rascunho = S.pendente.original; S.pendente = null; break;
+    case 'ler-acordo': S.lendo = true; desenhar(); setTimeout(() => { S.lendo = false; S.extraido = {titulo:'Férias de julho: divididas em dois períodos iguais', prazo:'Definir datas até 31/05/2027'}; if(S.aba==='obrigacoes') desenhar(); }, 1800); return;
+    case 'confirmar-extraido': { const ti = $('#ex-titulo').value.trim(), pr = $('#ex-prazo').value.trim(); if(!ti) return; S.obrig.push({id:++seq,titulo:ti,resp:'Ana e Bruno',prazo:pr,sit:'pendente'}); S.reg.push({quando:agora(),tipo:'obrigacao',texto:`Nova obrigação incluída a partir do acordo, conferida por ${NOME[S.perfil]}: ${ti}.`}); S.extraido = null; break; }
+    case 'descartar-extraido': S.extraido = null; break;
+    case 'relatorio': S.relatorio = true; break;
+    case 'fechar-rel': S.relatorio = false; break;
+    case 'copiar': { const txt = $('#rel-texto').textContent, ok = $('#copiado');
+      const falha = () => { const r = document.createRange(); r.selectNodeContents($('#rel-texto')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); ok.textContent = 'Texto selecionado. Use copiar no seu aparelho.'; };
+      try { navigator.clipboard.writeText(txt).then(() => { ok.textContent = 'Copiado.'; }, falha); } catch(_) { falha(); } return; }
+    default: return;
+  }
+  desenhar();
+});
+document.addEventListener('input', e => { if(e.target.id === 'texto') S.rascunho = e.target.value; });
+$('#perfil').addEventListener('change', e => { S.perfil = e.target.value; S.pendente = null; S.rascunho = ''; desenhar(); });
+
+/* ---- Navegação entre as três seções ---- */
+const VISTAS = ['inicio','demo','transparencia'];
+function rota(){
+  const h = location.hash.replace('#','');
+  const v = VISTAS.includes(h) ? h : 'inicio';
+  VISTAS.forEach(k => { document.getElementById('v-'+k).hidden = k !== v; });
+  document.querySelectorAll('[data-nav]').forEach(a => { if(a.dataset.nav === v) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
+  window.scrollTo(0,0);
+}
+window.addEventListener('hashchange', rota);
+desenhar(); rota();
+})();
+</script>
+
+</body>
+</html>
